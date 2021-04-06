@@ -1,5 +1,6 @@
 use crate::types::Expr;
 use crate::types::Expr::*;
+use nom::sequence::tuple;
 
 use nom::branch::alt;
 use nom::{
@@ -12,9 +13,8 @@ use nom::{
 use std::str::FromStr;
 
 pub(crate) fn parse(input: &str) -> IResult<&str, Expr> {
-    let (input, num1) = parse_number(input)?;
-    let (input, op) = alt((tag("+"), tag("-")))(input)?;
-    let (input, num2) = parse_number(input)?;
+    let (input, (num1, op, num2)) =
+        tuple((parse_number, alt((tag("+"), tag("-"))), parse_number))(input)?;
     if op == "+" {
         Ok((input, EAdd(Box::new(num1), Box::new(num2))))
     } else {
