@@ -1,24 +1,38 @@
 use crate::types::Expr;
 use crate::types::Expr::*;
-use nom::sequence::tuple;
 
 use nom::branch::alt;
-use nom::{
-    bytes::complete::tag,
-    character::complete::{digit1, space0},
-    combinator::map,
-    sequence::delimited,
-    IResult,
-};
+use nom::character::complete::{char, digit1, space0};
+use nom::combinator::map;
+use nom::multi::many1;
+use nom::sequence::{delimited, tuple};
+use nom::IResult;
 use std::str::FromStr;
 
 pub(crate) fn parse(input: &str) -> IResult<&str, Expr> {
-    let (input, (num1, op, num2)) =
-        tuple((parse_number, alt((tag("+"), tag("-"))), parse_number))(input)?;
-    if op == "+" {
-        Ok((input, EAdd(Box::new(num1), Box::new(num2))))
-    } else {
-        Ok((input, ESub(Box::new(num1), Box::new(num2))))
+    parse_basic_expr(input)
+}
+
+fn parse_basic_expr(input: &str) -> IResult<&str, Expr> {
+    let (input, num1) = parse_number(input)?;
+    let (input, exprs) = many1(parse_math_expr)(input)?;
+    Ok((input, parse_expr(num1, exprs)))
+}
+
+fn parse_math_expr(input: &str) -> IResult<&str, (char, Expr)> {
+    tuple((alt((char('+'), char('-'))), parse_number))(input)
+}
+
+fn parse_expr(expr: Expr, rem: Vec<(char, Expr)>) -> Expr {
+    rem.into_iter().fold(expr, |acc, val| parse_op(val, acc))
+}
+
+fn parse_op(tup: (char, Expr), expr1: Expr) -> Expr {
+    let (op, expr2) = tup;
+    match op {
+        '+' => EAdd(Box::new(expr1), Box::new(expr2)),
+        '-' => ESub(Box::new(expr1), Box::new(expr2)),
+        _ => panic!("Unknown Operation"),
     }
 }
 
@@ -51,6 +65,24 @@ mod tests {
         assert_eq!(
             parsed,
             Ok(("", ESub(Box::new(ENum(12)), Box::new(ENum(34)))))
+        );
+    }
+
+    #[test]
+    fn parse_nested_add_sub_statements() {
+        let parsed = parse("12 - 34 + 15 - 9");
+        assert_eq!(
+            parsed,
+            Ok((
+                "",
+                ESub(
+                    Box::new(EAdd(
+                        Box::new(ESub(Box::new(ENum(12)), Box::new(ENum(34)))),
+                        Box::new(ENum(15))
+                    )),
+                    Box::new(ENum(9))
+                )
+            ))
         );
     }
 }
