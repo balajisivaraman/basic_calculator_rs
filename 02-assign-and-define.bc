@@ -1,0 +1,17 @@
+# phi is a constant
+let phi = (1 + sqrt(5)) / 2
+
+# fib(n) calculates the nth Fibonacci number based on Binet's formula.
+define fib(n) {
+  let psi = 1 - phi
+  return (phi ^ n - psi ^ n) / (phi - psi)
+}
+
+fib(1)
+# == 1
+
+fib(3)
+# == 2
+
+fib(10)
+# == 55

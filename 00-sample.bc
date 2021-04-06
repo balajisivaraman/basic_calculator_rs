@@ -1,0 +1,36 @@
+1 + 1
+
+1 + 9 * 20 / 5
+
+(1 + 9) * 20 / 5
+
+let phi = (1 + sqrt(5)) / 2
+
+define fib(n) {
+  let psi = 1 - phi;
+  return (phi ^ n - psi ^ n) / (phi - psi);
+}
+
+fib(1)
+
+fib(3)
+
+fib(10)
+
+define fibrecursive(n) {
+  if (n == 1) {
+    return 1;
+  } else if (n == 2) {
+    return 1;
+  } else {
+    return fibrecursive(n - 1) + fibrecursive(n - 2);
+  };
+}
+
+fib(10)
+
+fibrecursive(10)
+
+m + 2
+
+10 + 2
