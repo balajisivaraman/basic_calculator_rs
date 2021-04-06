@@ -1,5 +1,6 @@
 use crate::parser::parse;
 
+mod evaluator;
 mod parser;
 mod types;
 
