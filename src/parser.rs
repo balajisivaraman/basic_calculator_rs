@@ -17,8 +17,20 @@ fn parse_basic_expr(input: &str) -> IResult<&str, Expr> {
     parse_math_expr(input)
 }
 
+fn parse_parens(input: &str) -> IResult<&str, Expr> {
+    delimited(
+        space0,
+        delimited(char('('), parse_math_expr, char(')')),
+        space0,
+    )(input)
+}
+
+fn parse_operation(input: &str) -> IResult<&str, Expr> {
+    alt((parse_parens, parse_number))(input)
+}
+
 fn parse_factor(input: &str) -> IResult<&str, Expr> {
-    let (input, num1) = parse_number(input)?;
+    let (input, num1) = parse_operation(input)?;
     let (input, exprs) = many0(tuple((char('^'), parse_factor)))(input)?;
     Ok((input, parse_expr(num1, exprs)))
 }
@@ -110,6 +122,16 @@ mod tests {
                 Box::new(ENum(3.0)),
                 Box::new(EExp(Box::new(ENum(4.0)), Box::new(ENum(6.0)))),
             )),
+        );
+        assert_eq!(parsed, Ok(("", expected)));
+    }
+
+    #[test]
+    fn test_parse_expression_with_parantheses() {
+        let parsed = parse("(1 + 2) * 3");
+        let expected = EMul(
+            Box::new(EAdd(Box::new(ENum(1.0)), Box::new(ENum(2.0)))),
+            Box::new(ENum(3.0)),
         );
         assert_eq!(parsed, Ok(("", expected)));
     }
