@@ -2,7 +2,9 @@ use crate::types::Expr;
 use crate::types::Expr::*;
 
 use nom::branch::alt;
-use nom::character::complete::{char, digit1, space0};
+use nom::bytes::complete::tag;
+use nom::character::complete::{char, space0};
+use nom::number::complete::{f64, double};
 use nom::combinator::map;
 use nom::multi::many0;
 use nom::sequence::{delimited, tuple};
@@ -25,8 +27,32 @@ fn parse_parens(input: &str) -> IResult<&str, Expr> {
     )(input)
 }
 
+fn parse_function_sin(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            tag("sin"),
+            delimited(char('('), parse_math_expr, char(')')),
+        )),
+        |(_, expr)| Sin(Box::new(expr)),
+    )(input)
+}
+
+fn parse_function_cos(input: &str) -> IResult<&str, Expr> {
+    map(
+        tuple((
+            tag("cos"),
+            delimited(char('('), parse_math_expr, char(')')),
+        )),
+        |(_, expr)| Cos(Box::new(expr)),
+    )(input)
+}
+
+fn parse_function(input: &str) -> IResult<&str, Expr> {
+    alt((parse_function_sin, parse_function_cos))(input)
+}
+
 fn parse_operation(input: &str) -> IResult<&str, Expr> {
-    alt((parse_parens, parse_number))(input)
+    alt((parse_parens, parse_number, parse_function))(input)
 }
 
 fn parse_factor(input: &str) -> IResult<&str, Expr> {
@@ -54,23 +80,20 @@ fn parse_expr(expr: Expr, rem: Vec<(char, Expr)>) -> Expr {
 fn parse_op(tup: (char, Expr), expr1: Expr) -> Expr {
     let (op, expr2) = tup;
     match op {
-        '+' => EAdd(Box::new(expr1), Box::new(expr2)),
-        '-' => ESub(Box::new(expr1), Box::new(expr2)),
-        '*' => EMul(Box::new(expr1), Box::new(expr2)),
-        '/' => EDiv(Box::new(expr1), Box::new(expr2)),
-        '^' => EExp(Box::new(expr1), Box::new(expr2)),
+        '+' => Add(Box::new(expr1), Box::new(expr2)),
+        '-' => Sub(Box::new(expr1), Box::new(expr2)),
+        '*' => Mul(Box::new(expr1), Box::new(expr2)),
+        '/' => Div(Box::new(expr1), Box::new(expr2)),
+        '^' => Exp(Box::new(expr1), Box::new(expr2)),
         _ => panic!("Unknown Operation"),
     }
 }
 
-fn parse_enum(parsed_num: &str) -> Expr {
-    let num = f32::from_str(parsed_num).unwrap();
-    ENum(num)
-}
-
 fn parse_number(input: &str) -> IResult<&str, Expr> {
-    map(delimited(space0, digit1, space0), parse_enum)(input)
-}
+    map(
+        delimited(space0, double, space0),
+        |num| Num(num),
+    )(input)}
 
 #[cfg(test)]
 mod tests {
@@ -82,7 +105,7 @@ mod tests {
         let parsed = parse("12 + 34");
         assert_eq!(
             parsed,
-            Ok(("", EAdd(Box::new(ENum(12.0)), Box::new(ENum(34.0)))))
+            Ok(("", Add(Box::new(Num(12.0)), Box::new(Num(34.0)))))
         );
     }
 
@@ -91,7 +114,7 @@ mod tests {
         let parsed = parse("12 - 34");
         assert_eq!(
             parsed,
-            Ok(("", ESub(Box::new(ENum(12.0)), Box::new(ENum(34.0)))))
+            Ok(("", Sub(Box::new(Num(12.0)), Box::new(Num(34.0)))))
         );
     }
 
@@ -102,12 +125,12 @@ mod tests {
             parsed,
             Ok((
                 "",
-                ESub(
-                    Box::new(EAdd(
-                        Box::new(ESub(Box::new(ENum(12.0)), Box::new(ENum(34.0)))),
-                        Box::new(ENum(15.0))
+                Sub(
+                    Box::new(Add(
+                        Box::new(Sub(Box::new(Num(12.0)), Box::new(Num(34.0)))),
+                        Box::new(Num(15.0))
                     )),
-                    Box::new(ENum(9.0))
+                    Box::new(Num(9.0))
                 )
             ))
         );
@@ -116,11 +139,11 @@ mod tests {
     #[test]
     fn test_parse_multi_level_expression() {
         let parsed = parse("1 * 2 + 3 / 4 ^ 6");
-        let expected = EAdd(
-            Box::new(EMul(Box::new(ENum(1.0)), Box::new(ENum(2.0)))),
-            Box::new(EDiv(
-                Box::new(ENum(3.0)),
-                Box::new(EExp(Box::new(ENum(4.0)), Box::new(ENum(6.0)))),
+        let expected = Add(
+            Box::new(Mul(Box::new(Num(1.0)), Box::new(Num(2.0)))),
+            Box::new(Div(
+                Box::new(Num(3.0)),
+                Box::new(Exp(Box::new(Num(4.0)), Box::new(Num(6.0)))),
             )),
         );
         assert_eq!(parsed, Ok(("", expected)));
@@ -129,10 +152,26 @@ mod tests {
     #[test]
     fn test_parse_expression_with_parantheses() {
         let parsed = parse("(1 + 2) * 3");
-        let expected = EMul(
-            Box::new(EAdd(Box::new(ENum(1.0)), Box::new(ENum(2.0)))),
-            Box::new(ENum(3.0)),
+        let expected = Mul(
+            Box::new(Add(Box::new(Num(1.0)), Box::new(Num(2.0)))),
+            Box::new(Num(3.0)),
         );
         assert_eq!(parsed, Ok(("", expected)));
+    }
+
+    #[test]
+    fn test_sin() {
+        let parsed = parse("sin(4)");
+        let expected = Sin(Box::new(Num(4.0)));
+        assert_eq!(parsed, Ok(("", expected)));
+    }
+
+    #[test]
+    fn test_decimals() {
+        let parsed = parse("1.1 + 1.2");
+        assert_eq!(
+            parsed,
+            Ok(("", Add(Box::new(Num(1.1)), Box::new(Num(1.2)))))
+        );
     }
 }
