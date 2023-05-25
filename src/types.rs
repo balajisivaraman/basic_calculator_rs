@@ -1,9 +1,11 @@
 #[derive(Debug, PartialEq)]
 pub enum Expr {
-    ENum(f32),
-    EAdd(Box<Expr>, Box<Expr>),
-    ESub(Box<Expr>, Box<Expr>),
-    EMul(Box<Expr>, Box<Expr>),
-    EDiv(Box<Expr>, Box<Expr>),
-    EExp(Box<Expr>, Box<Expr>),
+    Num(f64),
+    Add(Box<Expr>, Box<Expr>),
+    Sub(Box<Expr>, Box<Expr>),
+    Mul(Box<Expr>, Box<Expr>),
+    Div(Box<Expr>, Box<Expr>),
+    Exp(Box<Expr>, Box<Expr>),
+    Sin(Box<Expr>),
+    Cos(Box<Expr>)
 }
