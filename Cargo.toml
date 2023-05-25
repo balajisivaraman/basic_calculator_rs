@@ -1,10 +1,10 @@
 [package]
-name = "bcalc_improved"
+name = "calculator"
 version = "0.2.0"
-authors = ["Balaji Sivaraman <balaji@balajisivaraman.com>"]
+authors = ["Abhishek Sathiabalan", "Balaji Sivaraman <balaji@balajisivaraman.com>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-clap = "4.3.0"
+clap = { version = "4.3.0", features = ["derive"] }
 nom = "6"
