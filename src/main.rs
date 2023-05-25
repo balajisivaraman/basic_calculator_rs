@@ -20,13 +20,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         if line.is_empty() {
             continue;
         }
-        let (input, parsed_line) = parse(line).unwrap();
-        if !input.is_empty() {
-            eprintln!("parsing error, input remaining {:?}", input);
-            process::exit(1);
+        match calculate(line) {
+            Ok(result) => println!("{:?}", result),
+            Err(error) => eprintln!("{:?}", error)
         }
-        let result = evaluate(parsed_line);
-        println!("{:?}", result);
+
     }
     Ok(())
+}
+
+fn calculate(input: &str) -> Result<f64, Box<dyn Error>> {
+    let (input, parsed_line) = parse(input).unwrap();
+    println!("{:?}", parsed_line);
+    if !input.is_empty() {
+        eprintln!("parsing error, input remaining {:?}", input);
+        process::exit(1);
+    }
+    let result = evaluate(parsed_line);
+    return Ok(result);
 }

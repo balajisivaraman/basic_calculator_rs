@@ -6,4 +6,5 @@ license = "MIT"
 edition = "2018"
 
 [dependencies]
+clap = "4.3.0"
 nom = "6"

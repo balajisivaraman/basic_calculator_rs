@@ -4,12 +4,11 @@ use crate::types::Expr::*;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{char, space0};
-use nom::number::complete::{f64, double};
+use nom::number::complete::{double};
 use nom::combinator::map;
 use nom::multi::many0;
 use nom::sequence::{delimited, tuple};
 use nom::IResult;
-use std::str::FromStr;
 
 pub(crate) fn parse(input: &str) -> IResult<&str, Expr> {
     parse_basic_expr(input)
@@ -92,7 +91,7 @@ fn parse_op(tup: (char, Expr), expr1: Expr) -> Expr {
 fn parse_number(input: &str) -> IResult<&str, Expr> {
     map(
         delimited(space0, double, space0),
-        |num| Num(num),
+        Num,
     )(input)}
 
 #[cfg(test)]
